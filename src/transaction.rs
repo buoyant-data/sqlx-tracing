@@ -2,6 +2,8 @@ use futures::{StreamExt, TryStreamExt};
 use sqlx::Error;
 use tracing::Instrument;
 
+use std::ops::{Deref, DerefMut};
+
 impl<'c, DB> crate::Transaction<'c, DB>
 where
     DB: crate::prelude::Database + sqlx::Database,
@@ -25,6 +27,28 @@ where
     /// Aborts this transaction or savepoint.
     pub async fn rollback(self) -> Result<(), Error> {
         self.inner.rollback().await
+    }
+}
+
+impl<'c, DB> Deref for crate::Transaction<'c, DB>
+where
+    DB: sqlx::Database,
+{
+    type Target = DB::Connection;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<'c, DB> DerefMut for crate::Transaction<'c, DB>
+where
+    DB: sqlx::Database,
+{
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
     }
 }
 

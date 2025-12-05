@@ -225,6 +225,6 @@ pub struct Transaction<'c, DB>
 where
     DB: sqlx::Database,
 {
-    inner: sqlx::Transaction<'c, DB>,
-    attributes: Arc<Attributes>,
+    pub inner: sqlx::Transaction<'c, DB>,
+    pub(crate) attributes: Arc<Attributes>,
 }

@@ -1,4 +1,5 @@
 use futures::{StreamExt, TryStreamExt};
+use std::ops::Deref;
 use tracing::Instrument;
 
 impl<'p, DB> sqlx::Executor<'p> for &'_ crate::Pool<DB>
@@ -207,5 +208,17 @@ where
         let span = crate::instrument!("sqlx.prepare_with", sql, attrs);
         let fut = self.inner.prepare_with(sql, parameters);
         Box::pin(async move { fut.await.inspect_err(crate::span::record_error) }.instrument(span))
+    }
+}
+
+impl<DB> Deref for crate::Pool<DB>
+where
+    DB: sqlx::Database,
+{
+    type Target = sqlx::Pool<DB>;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.inner
     }
 }
