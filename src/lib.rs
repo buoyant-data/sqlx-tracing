@@ -138,7 +138,7 @@ pub struct Pool<DB>
 where
     DB: sqlx::Database,
 {
-    inner: sqlx::Pool<DB>,
+    pub inner: sqlx::Pool<DB>,
     attributes: Arc<Attributes>,
 }
 
