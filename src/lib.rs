@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 mod connection;
+pub(crate) mod execute;
 mod pool;
 pub mod prelude;
 pub(crate) mod span;

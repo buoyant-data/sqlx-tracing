@@ -13,13 +13,26 @@ keywords = ["sqlx", "tracing", "opentelemetry", "database", "observability"]
 categories = ["database", "development-tools::debugging", "development-tools::profiling", "asynchronous"]
 
 [features]
+# `sqlx`'s `macros` feature is on by default, and it transitively enables
+# `sqlx-core/offline`, which adds the hidden `Executor::describe` method. Enable
+# `offline` by default so our `Executor` impls stay in sync (i.e. also provide
+# `describe`) for the common case; opt out with `default-features = false` only
+# if you also disable `sqlx`'s `macros` feature.
+default = ["offline"]
 postgres = ["sqlx/postgres"]
 sqlite = ["sqlx/sqlite"]
 mysql = ["sqlx/mysql"]
+# `sqlx-core`'s `offline` feature adds the hidden `Executor::describe` method used
+# by the compile-time query macros. It is enabled transitively whenever `sqlx`'s
+# `macros` feature is on, so enable this alongside it to keep our `Executor` impls
+# in sync (i.e. so they also provide `describe`).
+offline = ["dep:sqlx-core", "sqlx-core/offline"]
 
 [dependencies]
 futures = { version = "0.3" }
-sqlx = { version = "0.8", default-features = false, features = ["derive"] }
+sqlx = { version = "0.9", default-features = false, features = ["derive"] }
+# Only pulled in by the `offline` feature, to forward `sqlx-core/offline` precisely.
+sqlx-core = { version = "0.9", default-features = false, optional = true }
 tracing = { version = "0.1" }
 
 [dev-dependencies]
