@@ -37,7 +37,8 @@ pub struct PoolBuilder<DB: sqlx::Database> {
     attributes: Attributes,
 }
 
-// this is required because `pool.connect_options().to_url_lossy()` panics with sqlite
+// URL-based attribute extraction — works for TCP-backed drivers (postgres, mysql).
+// Sqlite has its own impl below because `to_url_lossy()` panics on sqlite options.
 #[cfg(feature = "postgres")]
 impl From<sqlx::Pool<sqlx::Postgres>> for PoolBuilder<sqlx::Postgres> {
     /// Create a new builder from an existing SQLx pool.
@@ -57,7 +58,6 @@ impl From<sqlx::Pool<sqlx::Postgres>> for PoolBuilder<sqlx::Postgres> {
     }
 }
 
-// this is required because `pool.connect_options().to_url_lossy()` panics with sqlite
 #[cfg(feature = "sqlite")]
 impl From<sqlx::Pool<sqlx::Sqlite>> for PoolBuilder<sqlx::Sqlite> {
     /// Create a new builder from an existing SQLx pool.
@@ -149,7 +149,7 @@ where
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
-            attributes: Arc::clone(&self.attributes),
+            attributes: self.attributes.clone(),
         }
     }
 }
@@ -176,6 +176,18 @@ where
         self.inner.begin().await.map(|inner| Transaction {
             inner,
             attributes: self.attributes.clone(),
+        })
+    }
+
+    /// Attempts to retrieve a connection and immediately begins a new transaction if successful.
+    ///
+    /// The returned [`Transaction`] is instrumented for tracing.
+    pub async fn try_begin<'c>(&'c self) -> Result<Option<Transaction<'c, DB>>, sqlx::Error> {
+        self.inner.try_begin().await.map(|t| {
+            t.map(|inner| Transaction {
+                inner,
+                attributes: self.attributes.clone(),
+            })
         })
     }
 
